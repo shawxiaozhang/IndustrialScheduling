@@ -39,9 +39,9 @@ if __name__ == "__main__":
     opt_math_model = OptModelBuilder(steel_rtn)
     # SteelHelper.SteelHelper.check_model(steel_rtn, opt_math_model)
 
-    result = solve_cplex(opt_math_model)
+    # result = solve_cplex(opt_math_model)
 
-    # result = solve_schedule_bb.SteelBranchBound(steel_rtn, opt_math_model).solve_bb()
+    result = solve_schedule_bb.SteelBranchBound(steel_rtn, opt_math_model).solve_bb()
 
     # todo reduce lp-solve-num, look at lp infeasibility
     # todo lp num, consider lead task for all stages ...
