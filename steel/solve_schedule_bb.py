@@ -28,6 +28,8 @@ log = logging.getLogger('steel')
 
 class SteelBranchBound():
     def __init__(self, steel_rtn, opt_model, branch_option=LEAD_FOLLOWER_ALL_STAGES):
+        # todo reduce lp-solve-num, look at lp infeasibility
+        # todo lp num, consider lead task for all stages ...
         self.opt_model = opt_model
         self.steel_rtn = steel_rtn
         self.cplex_lp_prob = solve_schedule.convert_to_cplex(opt_model)

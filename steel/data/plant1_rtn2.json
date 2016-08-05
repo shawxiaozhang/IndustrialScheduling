@@ -1,18 +1,18 @@
 {
   "trans_time": {
-    "AOD1-LF2": 20, 
-    "AOD2-LF2": 8, 
-    "AOD2-LF1": 20, 
-    "LF2-CC2": 15, 
-    "LF2-CC1": 10, 
-    "EAF2-AOD2": 10, 
-    "EAF2-AOD1": 20, 
-    "LF1-CC1": 10, 
-    "LF1-CC2": 20, 
-    "EAF1-AOD2": 20, 
-    "EAF1-AOD1": 10, 
-    "AOD1-LF1": 4
-  }, 
+    "EAF1-AOD1": 10,
+    "EAF1-AOD2": 20,
+    "EAF2-AOD1": 20,
+    "EAF2-AOD2": 10,
+    "AOD1-LF1": 4,
+    "AOD1-LF2": 20,
+    "AOD2-LF1": 20,
+    "AOD2-LF2": 8,
+    "LF1-CC1": 10,
+    "LF1-CC2": 20,
+    "LF2-CC2": 15,
+    "LF2-CC1": 10
+  },
   "group2heats": {
     "1": [
       1, 
@@ -52,12 +52,15 @@
     ]
   }, 
   "equip2mw": {
-    "LF": 2, 
-    "AOD": 2, 
-    "CC1": 7, 
+    "LF1": 2,
+    "LF2": 2,
+    "AOD1": 2,
+    "AOD2": 2,
+    "CC1": 7,
     "CC2": 7, 
-    "EAF": 85
-  }, 
+    "EAF1": 85,
+    "EAF2": 85
+  },
   "equip2process_time": {
     "CC1": {
       "1": 50.0, 
@@ -269,19 +272,10 @@
     }
   }, 
   "trans_time_max": {
-    "AOD1-LF2": 240, 
-    "AOD2-LF2": 240, 
-    "AOD2-LF1": 240, 
-    "LF2-CC2": 120, 
-    "LF2-CC1": 120, 
-    "EAF2-AOD2": 240, 
-    "EAF2-AOD1": 240, 
-    "LF1-CC1": 120, 
-    "LF1-CC2": 120, 
-    "EAF1-AOD2": 240, 
-    "EAF1-AOD1": 240, 
-    "AOD1-LF1": 240
-  }, 
+    "TR_S1": 240,
+    "TR_S3": 120,
+    "TR_S2": 240
+  },
   "stage2units": {
     "1": {
       "EAF1": 1, 
