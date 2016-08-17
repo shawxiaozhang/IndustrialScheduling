@@ -6,13 +6,12 @@ Then analyze the historical records to get cost coefficients by regression.
 
 import logging
 import datetime
-import itertools
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 
-from mpc_coordinator import predict_agc, CementPlant, EnergyStorage, MarketSignals, BuildOptModel
+from mpc_coordinator import predict_agc, CementPlant, EnergyStorage, BuildOptModel
 
 log = logging.getLogger('cement')
 log.setLevel(logging.DEBUG)
@@ -22,62 +21,46 @@ ch.setFormatter(logging.Formatter('%(module)s %(levelname)s %(lineno)d: - %(mess
 log.addHandler(ch)
 
 
-def simulate_mpc_single_hour(agc_d):
-    e_list = [0.5]
-    beta_list = [10]
-    gama_list = [10]
-    switch_list = [20]
-    h_list = [15]
-
-    for horizon in h_list:
-        [preds, agc] = predict_agc(agc_d, n_horizon=horizon, hour=6)
-        for beta, switch_limit, e_ratio, gama in itertools.product(beta_list, switch_list, e_list, gama_list):
-            cement = CementPlant(switch_limit)
-
-            storage = EnergyStorage()
-            signals = MarketSignals(agc, 2)
-
-            opt = BuildOptModel(cement, storage, signals)
-            opt.set_mpc(preds)
-
-            opt.mpc_obj_beta = beta
-            opt.mpc_obj_gamma = gama
-
-            opt.simulate_control_ts(reg_mw=6, base_mw=4, cement_mw_t0=4, policy='MPC')
-
-
-def simulate_mpc_many_hours(agc_d, config=None, file_name='history_records.txt'):
-    """Run MPC simulations over many hours and record hourly summary.
+def test_simulate_mpc_hours(log_file='history_records.txt'):
+    """Run MPC simulations over many hours and record the hourly summary.
     With various settings of R/B and unique setting of MPC config.
     """
-    if not config:
-        return
 
-    fo = open(file_name, 'w+')
-    msg = 'alpha 10 beta %d gamma %d e_ratio %.1f switch_limit %d horizon %d' % \
-          (config['beta'], config['gamma'], -9.9, config['switch_limit'], config['mpc_horizon'])
-    fo.write(msg + '\n')
+    agc_days = np.loadtxt('data/regD-13-01-04-Fri.txt')
+    # agc_days = np.hstack((agc, np.loadtxt('data/regD-13-01-05-Sat.txt')))
+
+    config = {'beta': 10,
+              'gamma': 10,
+              'switch_limit': 15,
+              'mpc_horizon': 15}
 
     base2reg = {4: [3.5, 4, 4.5, 5, 5.5, 6, 6.5],
                 2: [3.75, 4.25],
                 6: [3.75, 4.25],
                 3: [3.5, 4, 4.5]}
 
-    for base_mw in [2, 6, 3]:
+    agc_days = agc_days[:1800*5]
+    base2reg = {k: base2reg[k] for k in [4]}
+
+    fo = open(log_file, 'w+')
+    msg = 'alpha 10 beta %d gamma %d e_ratio %.1f switch_limit %d horizon %d' % \
+          (config['beta'], config['gamma'], -9.9, config['switch_limit'], config['mpc_horizon'])
+    fo.write(msg + '\n')
+
+    for base_mw in base2reg.keys():
         for reg_mw in base2reg[base_mw]:
-            for hour in range(1, len(agc_d)/1800-2, 1):
-                [preds, agc] = predict_agc(agc_d, n_horizon=config['mpc_horizon'], hour=hour)
+            for hour in range(1, len(agc_days)/1800-2, 1):
+                [preds, agc] = predict_agc(agc_days, mpc_horizon=config['mpc_horizon'], hour=hour)
                 cement = CementPlant(config['switch_limit'])
                 storage = EnergyStorage()
-                signals = MarketSignals(agc, 2)
-                opt = BuildOptModel(cement, storage, signals)
-                opt.set_mpc(preds)
+                opt = BuildOptModel(cement, storage)
+                opt.set_base_reg(base_mw, reg_mw)
                 opt.mpc_obj_beta = config['beta']
                 opt.mpc_obj_gamma = config['gamma']
-                [reg_vio_mwh, switch_mw, storage_de_mwh, cement_mwh] = \
-                    opt.simulate_control_ts(reg_mw=reg_mw, base_mw=base_mw, cement_mw_t0=4, policy='MPC')
-                if reg_vio_mwh is None:
+                cement_p_mw, storage_p_mw, storage_e_mwh, cpu_list = opt.simulate_mpc(agc, preds)
+                if cement_p_mw is None:
                     continue
+                reg_vio_mwh, switch_mw, storage_de_mwh, cement_mwh = opt.simulation_summary(agc, cement_p_mw, storage_p_mw, storage_e_mwh, cpu_list)
                 penalty = reg_vio_mwh*10 + switch_mw*0.1 + 2*abs(storage_de_mwh)
                 msg = 'R %.1f B %d hour %2d P %7.1f = (%.3f,%.1f,%.1f) Cem %.1f' \
                       % (reg_mw, base_mw, hour, penalty, reg_vio_mwh, switch_mw, storage_de_mwh, cement_mwh)
@@ -85,17 +68,7 @@ def simulate_mpc_many_hours(agc_d, config=None, file_name='history_records.txt')
     fo.close()
 
 
-def get_history_hourly_records():
-    agc = np.loadtxt('data/regD-13-01-04-Fri.txt')
-    # agc = np.hstack((agc, np.loadtxt('data/regD-13-01-05-Sat.txt')))
-    config = {'beta': 10,
-              'gamma': 10,
-              'switch_limit': 15,
-              'mpc_horizon': 15}
-    simulate_mpc_many_hours(agc, config)
-
-
-def analyze_hourly_summary(file_name='history_records.txt'):
+def test_analyze_records(file_name='history_records.txt'):
     """Analyze the hourly summary (violation, switching, etc.) of regulation provision over days."""
     costs = ['Regulation Violation MWh', 'Storage Deviation MWh', 'Cement Energy', 'Switch MW']
 
@@ -186,11 +159,8 @@ def analyze_hourly_summary(file_name='history_records.txt'):
 
 if __name__ == "__main__":
     log.info(datetime.datetime.today())
-
-    # simulate_mpc_single_hour(np.loadtxt('data/regD-13-01-04-Fri.txt'))
-
-    get_history_hourly_records()
-    analyze_hourly_summary()
+    test_simulate_mpc_hours()
+    test_analyze_records()
 
 
 
